@@ -28,13 +28,20 @@ public class Version1 extends AbstractionLayerAI{
 	UnitType lightType;
 	UnitType heavyType;
 	UnitType rangedType;
+	//the counter
+	int counter=0;
+	boolean resourse = true;
 	int rushflag=0;
+	int base_init_distance=0;
 	// This is the default constructor that microRTS will call:
 	public Version1(UnitTypeTable a_utt) {
 	        this(a_utt, new AStarPathFinding());
 	    }
 	public Version1(UnitTypeTable a_utt, PathFinding a_pf) {
+		
         super(a_pf);
+       // System.out.print("start");
+        
         reset(a_utt);
     }	
 	public void reset() {
@@ -51,6 +58,7 @@ public class Version1 extends AbstractionLayerAI{
 
     public void reset(UnitTypeTable a_utt)  
     {
+    	
         utt = a_utt;
         if (utt!=null) {
             workerType = utt.getUnitType("Worker");
@@ -60,23 +68,32 @@ public class Version1 extends AbstractionLayerAI{
             rangedType=utt.getUnitType("Ranged");
             heavyType = utt.getUnitType("Heavy");
         }
+        
     }   
        
     // Called by microRTS at each game cycle.
     // Returns the action the bot wants to execute.
     public PlayerAction getAction(int player, GameState gs) {
+    	
+    	
     	 PhysicalGameState pgs = gs.getPhysicalGameState();
          Player p = gs.getPlayer(player);
          PlayerAction pa = new PlayerAction();
-
+         //get the init base distance
+         if (counter==0){
+        	 get_init_basedistance(player,pgs);      	 
+        	 counter+=1;
+         }
+         
          // behavior of bases:
          for(Unit u:pgs.getUnits()) {
              if (u.getType()==baseType && 
                  u.getPlayer() == player && 
                  gs.getActionAssignment(u)==null) {
-                 baseBehavior(u,p,pgs);
-                
-             }
+            	 if (base_init_distance>22)
+            		 {baseBehavior(u,p,pgs);}
+            	 else{rushbaseBehavior(u,p,pgs);}
+                }
          }
         
          // behavior of melee units:
@@ -87,6 +104,7 @@ public class Version1 extends AbstractionLayerAI{
                  gs.getActionAssignment(u)==null) {           	                       	 		
            
             	//defenceUnitBehavior(u,p,gs);
+            	 
                 meleeUnitBehavior(u,p,gs);
             	
              }        
@@ -108,10 +126,29 @@ public class Version1 extends AbstractionLayerAI{
                  workers.add(u);
              }        
          }
-         workersBehavior(workers,p,gs);
+         if(base_init_distance>22){workersBehavior(workers,p,gs);}
+         else{rushworkersBehavior(workers,p,gs);}
+         
          
                  
          return translateActions(player,gs);
+    }
+    public void get_init_basedistance(int Player,PhysicalGameState pgs){
+    	Unit mbase=null;
+    	Unit hbase=null;
+
+    	for(Unit u:pgs.getUnits()) {
+            if (u.getType()==baseType ) {
+            	if(u.getPlayer()==Player)
+            		mbase=u;
+                  
+            	else{
+            		hbase=u;
+            	}
+            }
+        }  
+    	base_init_distance=Math.abs(mbase.getX() - hbase.getX()) + Math.abs(mbase.getY() - hbase.getY());
+    	System.out.print(base_init_distance);
     }
     private void barracksBehavior(Unit u, Player p, GameState gs) {
 		// TODO Auto-generated method stub
@@ -128,7 +165,7 @@ public class Version1 extends AbstractionLayerAI{
                 lightnums+=1;
                 }  
         }
-    	System.out.println(Rangednums+" "+lightnums);
+    	//System.out.println(Rangednums+" "+lightnums);
     	if (p.getResources() >= lightType.cost&&(Rangednums>=(lightnums+Rangednums)*2/3||lightnums<=2)) {
             train(u, lightType);
     	}
@@ -137,9 +174,6 @@ public class Version1 extends AbstractionLayerAI{
         }
      	
         }
-        /*else if (p.getResources() >= heavyType.cost&&Heavynums<(lightnums+Rangednums+Heavynums)/3){
-        	train(u, heavyType);
-        }*/
         
 	
 	public void workersBehavior(List<Unit> workers,Player p, GameState gs){
@@ -149,8 +183,6 @@ public class Version1 extends AbstractionLayerAI{
         int n=0;
         int resourcesUsed = 0;
         List<Unit> freeWorkers = new LinkedList<Unit>();
-        //the defencing worker
-        List<Unit> defenceWorkers = new LinkedList<Unit>();
       
         freeWorkers.addAll(workers);
         
@@ -239,10 +271,11 @@ public class Version1 extends AbstractionLayerAI{
                 if (closestResource == null || d < RclosestDistance) {
                 	closestResource = ru;
                     RclosestDistance = d;
-                    if (d>12){rushflag=1;}
+                    
                 	}
                }
             }
+        if (RclosestDistance>12){rushflag=1;}
         if(rushflag==0){defenceUnitBehavior(u,p,gs);}
         else{meleeUnitAttack(u,p,gs);
         }
@@ -291,7 +324,7 @@ public class Version1 extends AbstractionLayerAI{
         Unit closestEnemy = null;
         int defenceDistance=0;
         int closestDistance = 0;
-
+        int attackarea=4;
         int mybase = 0;
         for(Unit u2:pgs.getUnits()) {
             if (u2.getPlayer()>=0 && u2.getPlayer()!=p.getID()) { 
@@ -308,6 +341,8 @@ public class Version1 extends AbstractionLayerAI{
         }
         if (u.getType()==lightType){
         	defenceDistance=6;
+        	attackarea=6;
+        	
         }
         /*else if (u.getType()==heavyType){
         	defenceDistance=10;
@@ -315,8 +350,9 @@ public class Version1 extends AbstractionLayerAI{
         }*/
         else{
         	defenceDistance=4;
+        	attackarea=10;
         }
-        if (closestEnemy!=null && (closestDistance < 4 || mybase < defenceDistance)) {
+        if (closestEnemy!=null && (closestDistance < attackarea || mybase < defenceDistance)) {
         	attack(u,closestEnemy);
         }
         else
@@ -328,15 +364,83 @@ public class Version1 extends AbstractionLayerAI{
     public void baseBehavior(Unit u,Player p, PhysicalGameState pgs){
     	int nums=0;
     	for(Unit worker:pgs.getUnits()){
-    		if (worker.getType().canHarvest){
+    		if (worker.getType().canHarvest&&worker.getPlayer()==p.getID()){
     			nums=nums+1;
     			
-    		}
-    		
+    		}  		
     	}
+   
     	if (p.getResources()>=workerType.cost&&nums<=3 ) train(u, workerType);
     }
+    public void rushbaseBehavior(Unit u,Player p, PhysicalGameState pgs) {
+        if (p.getResources()>=workerType.cost) train(u, workerType);
+    }
     
+    public void rushworkersBehavior(List<Unit> workers,Player p, GameState gs) {
+        PhysicalGameState pgs = gs.getPhysicalGameState();
+        int nbases = 0;
+        int resourcesUsed = 0;
+        Unit harvestWorker = null;
+        List<Unit> freeWorkers = new LinkedList<Unit>();
+        freeWorkers.addAll(workers);
+        
+        if (workers.isEmpty()) return;
+        
+        for(Unit u2:pgs.getUnits()) {
+            if (u2.getType() == baseType && 
+                u2.getPlayer() == p.getID()) nbases++;
+        }
+        
+        List<Integer> reservedPositions = new LinkedList<Integer>();
+        if (nbases==0 && !freeWorkers.isEmpty()) {
+            // build a base:
+            if (p.getResources()>=baseType.cost + resourcesUsed) {
+                Unit u = freeWorkers.remove(0);
+                buildIfNotAlreadyBuilding(u,baseType,u.getX(),u.getY(),reservedPositions,p,pgs);
+                resourcesUsed+=baseType.cost;
+            }
+        }
+        
+        if (freeWorkers.size()>0) harvestWorker = freeWorkers.remove(0);
+        
+        // harvest with the harvest worker:
+        if (harvestWorker!=null) {
+            Unit closestBase = null;
+            Unit closestResource = null;
+            int closestDistance = 0;
+            for(Unit u2:pgs.getUnits()) {
+                if (u2.getType().isResource) { 
+                    int d = Math.abs(u2.getX() - harvestWorker.getX()) + Math.abs(u2.getY() - harvestWorker.getY());
+                    if (closestResource==null || d<closestDistance) {
+                        closestResource = u2;
+                        closestDistance = d;
+                    }
+                }
+            }
+            closestDistance = 0;
+            for(Unit u2:pgs.getUnits()) {
+                if (u2.getType().isStockpile && u2.getPlayer()==p.getID()) { 
+                    int d = Math.abs(u2.getX() - harvestWorker.getX()) + Math.abs(u2.getY() - harvestWorker.getY());
+                    if (closestBase==null || d<closestDistance) {
+                        closestBase = u2;
+                        closestDistance = d;
+                    }
+                }
+            }
+            if (closestResource!=null && closestBase!=null) {
+                AbstractAction aa = getAbstractAction(harvestWorker);
+                if (aa instanceof Harvest) {
+                    Harvest h_aa = (Harvest)aa;
+                    if (h_aa.getTarget() != closestResource || h_aa.getBase()!=closestBase) harvest(harvestWorker, closestResource, closestBase);
+                } else {
+                    harvest(harvestWorker, closestResource, closestBase);
+                }
+            }
+        }
+        
+        for(Unit u:freeWorkers) meleeUnitAttack(u, p, gs);
+        
+    }
     // This will be called by the microRTS GUI to get the
     // list of parameters that this bot wants exposed
     // in the GUI.
