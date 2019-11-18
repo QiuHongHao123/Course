@@ -310,10 +310,10 @@ public class Version2 extends AbstractionLayerAI{
     public void meleeUnitAttack(Unit u,Player p, GameState gs){       
     	PhysicalGameState pgs = gs.getPhysicalGameState();    	
         Unit closestEnemy = null;
-        int closestDistance = 0;
+        double closestDistance = 0;
         for (Unit u2 : pgs.getUnits()) {
             if (u2.getPlayer() >= 0 && u2.getPlayer() != p.getID()) {
-                int d = Math.abs(u2.getX() - u.getX()) + Math.abs(u2.getY() - u.getY());
+                double d = Math.sqrt(Math.pow(u2.getX() - u.getX(),2) + Math.pow(u2.getY() - u.getY(),2));
                 if (closestEnemy == null || d < closestDistance) {
                     closestEnemy = u2;
                     closestDistance = d;
@@ -350,13 +350,13 @@ public class Version2 extends AbstractionLayerAI{
     	PhysicalGameState pgs = gs.getPhysicalGameState();
         Unit closestEnemy = null;
         int defenceDistance=0;
-        int closestDistance = 0;
+        double closestDistance = 0;
         int attackarea=4;
-        int mybase = 0;
+        double mybase = 0;
         Unit mbase=null;
         for(Unit u2:pgs.getUnits()) {
             if (u2.getPlayer()>=0 && u2.getPlayer()!=p.getID()) { 
-                int d = Math.abs(u2.getX() - u.getX()) + Math.abs(u2.getY() - u.getY());
+            	double d = Math.sqrt(Math.pow(u2.getX() - u.getX(),2) + Math.pow(u2.getY() - u.getY(),2));
                 if (closestEnemy==null || d<closestDistance) {
                     closestEnemy = u2;
                     closestDistance = d;
@@ -365,7 +365,7 @@ public class Version2 extends AbstractionLayerAI{
             else if(u2.getPlayer()==p.getID() && u2.getType() == baseType)
             {
             	mbase=u2;
-                mybase = Math.abs(u2.getX() - u.getX()) + Math.abs(u2.getY() - u.getY());
+            	mybase = Math.sqrt(Math.pow(u2.getX() - u.getX(),2) + Math.pow(u2.getY() - u.getY(),2));
             }
         }
         
@@ -492,6 +492,3 @@ public class Version2 extends AbstractionLayerAI{
 
 	
 	    
-
-
-
