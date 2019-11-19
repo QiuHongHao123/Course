@@ -1,0 +1,7 @@
+在Version3中更改了rushflag的判定条件，修改了防御策略，现在敌方只要距离我方base一定距离我方所有单位就会主动出击。
+出击单位和未出击单位现在有不同的defencearea保证不会造成过大的兵力损耗。
+下一步：
+  修改16x16地图时策略
+  修改各个兵种attackarea，defencearea等参数
+  修改barrack中light和ranged的训练策略，确定合适的兵力占比
+  修改参数工作交给波波同学
