@@ -35,6 +35,7 @@ public class Version3 extends AbstractionLayerAI{
 	int rushflag=0;
 	int base_init_distance=0;
 	Unit mbase=null;
+	List<Unit> activedefencelist=new LinkedList<Unit>();
 	
 	// This is the default constructor that microRTS will call:
 	public Version3(UnitTypeTable a_utt) {
@@ -182,10 +183,10 @@ public class Version3 extends AbstractionLayerAI{
     	}
     	else{
     	//System.out.println(Rangednums+" "+lightnums);
-    		if (p.getResources() >= lightType.cost&&(Rangednums>=(lightnums+Rangednums)*2/3||lightnums<=2)) {
+    		if (p.getResources() >= lightType.cost&&(Rangednums>=(lightnums+Rangednums)/2||lightnums<=3)) {
     			train(u, lightType);
     		}
-    		else if (p.getResources() >= rangedType.cost&&lightnums>=(Rangednums+lightnums)/3){
+    		else if (p.getResources() >= rangedType.cost&&lightnums>=(Rangednums+lightnums)/2){
     			train(u, rangedType);
     		}
     	}
@@ -303,8 +304,19 @@ public class Version3 extends AbstractionLayerAI{
                 	}
                }
             }}
-        if ((RclosestDistance>12||closestResource==null)/*&&(mbarrack==null||gs.getActionAssignment(mbarrack).action.getType()==UnitAction.TYPE_PRODUCE)*/)
-        	{rushflag=1;}
+        UnitAction mbarrackaction=gs.getUnitAction(mbarrack);
+        if ((RclosestDistance>12||closestResource==null))
+        {
+        	if(mbarrackaction!=null&&mbarrackaction.getType()==UnitAction.TYPE_PRODUCE)
+        		{rushflag=0;}
+        	else{rushflag=1;}
+        	
+        	}
+        if(mbarrack!=null&&mbarrackaction!=null){
+        	if(mbarrackaction.getActionName()=="wait"){rushflag=1;}
+        	if(mbarrackaction.getType()==UnitAction.TYPE_PRODUCE)
+    			{rushflag=0;}
+        	}
         if(rushflag==0){defenceUnitBehavior(u,p,gs);}
         else{meleeUnitAttack(u,p,gs);
         }
@@ -317,7 +329,7 @@ public class Version3 extends AbstractionLayerAI{
         double closestDistance = 0;
         for (Unit u2 : pgs.getUnits()) {
             if (u2.getPlayer() >= 0 && u2.getPlayer() != p.getID()) {
-                double d = Math.sqrt(Math.pow(u2.getX() - u.getX(),2) + Math.pow(u2.getY() - u.getY(),2));
+                double d = Math.abs(u2.getX() - u.getX()) + Math.abs(u2.getY() - u.getY());
                 if (closestEnemy == null || d < closestDistance) {
                     closestEnemy = u2;
                     closestDistance = d;
@@ -369,7 +381,7 @@ public class Version3 extends AbstractionLayerAI{
             	int u2directx=(u.getX()-u2.getX())>0?1:-1;
             	int u2directy=(u.getY()-u2.getY())>0?1:-1;
             	if(u2directx==directx||u2directy==directy){
-            		double d = Math.sqrt(Math.pow(u2.getX() - u.getX(),2) + Math.pow(u2.getY() - u.getY(),2));
+            		double d = Math.abs(u2.getX() - u.getX()) + Math.abs(u2.getY() - u.getY());
             		if (closetranged == null || d < closetrangeddistance) {
             			closetranged = u2;
             			closetrangeddistance = d;
@@ -386,13 +398,15 @@ public class Version3 extends AbstractionLayerAI{
     	PhysicalGameState pgs = gs.getPhysicalGameState();
         Unit closestEnemy = null;
         int defenceDistance=0;
+        int defencearea=10;
+        int defang_tomybase=pgs.getHeight();
         double closestDistance = 0;
         int attackarea=4;
         double mybase = 0;
         Unit mbase=null;
         for(Unit u2:pgs.getUnits()) {
             if (u2.getPlayer()>=0 && u2.getPlayer()!=p.getID()) { 
-            	double d = Math.sqrt(Math.pow(u2.getX() - u.getX(),2) + Math.pow(u2.getY() - u.getY(),2));
+            	double d =Math.abs(u2.getX() - u.getX()) + Math.abs(u2.getY() - u.getY());
                 if (closestEnemy==null || d<closestDistance) {
                     closestEnemy = u2;
                     closestDistance = d;
@@ -401,13 +415,23 @@ public class Version3 extends AbstractionLayerAI{
             else if(u2.getPlayer()==p.getID() && u2.getType() == baseType)
             {
             	mbase=u2;
-            	mybase = Math.sqrt(Math.pow(u2.getX() - u.getX(),2) + Math.pow(u2.getY() - u.getY(),2));
+            	mybase =Math.abs(u2.getX() - u.getX()) + Math.abs(u2.getY() - u.getY()); 
             }
         }
-        
+      
         if (u.getType()==lightType){
-        	defenceDistance=5;
-        	attackarea=5;
+        	if(!activedefencelist.contains(u))
+        		{	
+        			defenceDistance=5;
+        			attackarea=5;
+        			System.out.print(u.getID()+"not active"+"\n");
+        			}
+        	else{
+        		defenceDistance=5;
+    			attackarea=4;
+        		System.out.print(u.getID()+"active"+"\n");
+        	}
+        	
         	
         }
         /*else if (u.getType()==heavyType){
@@ -415,23 +439,44 @@ public class Version3 extends AbstractionLayerAI{
         	
         }*/
         else{
-        	defenceDistance=4;
-        	attackarea=8;
-        }
-
-        if ((closestDistance < attackarea || mybase < defenceDistance)) {
+        	if(!activedefencelist.contains(u))
+    		{	defenceDistance=3;
+        		attackarea=7;
+    			
+    			System.out.print(u.getID()+"not active"+"\n");
+    			}
+        	else{
+        		defenceDistance=3;
+        		attackarea=5;
+        		System.out.print(u.getID()+" active"+"\n");
+        	}
         	
-        
+        }
+        if(mbase!=null){
+        	defang_tomybase=Math.abs(closestEnemy.getX() - mbase.getX()) + Math.abs(closestEnemy.getY() - mbase.getY());
+        }
+        if(defang_tomybase<=defencearea)
+        {
         	attack(u,closestEnemy);
         }
-        else if(mybase > defenceDistance+1)
-        {
-        	
-        	attack(u,mbase);
-            
-        }
         else{
-        	attack(u,null);
+        	if ((closestDistance <= attackarea || mybase <= defenceDistance)) {
+        	
+        
+        		attack(u,closestEnemy);
+        		activedefencelist.add(u);
+        	}
+        	else if(mybase >= defenceDistance+2)
+        	{
+        	
+        		attack(u,mbase);
+        		activedefencelist.remove(u);
+            
+        	}
+        	else{
+        		attack(u,null);
+        		activedefencelist.remove(u);
+        	}
         }
     }
 
@@ -451,70 +496,81 @@ public class Version3 extends AbstractionLayerAI{
     }
     
     public void rushworkersBehavior(List<Unit> workers,Player p, GameState gs) {
-        PhysicalGameState pgs = gs.getPhysicalGameState();
-        int nbases = 0;
-        int resourcesUsed = 0;
-        Unit harvestWorker = null;
-        List<Unit> freeWorkers = new LinkedList<Unit>();
-        freeWorkers.addAll(workers);
-        
-        if (workers.isEmpty()) return;
-        
-        for(Unit u2:pgs.getUnits()) {
-            if (u2.getType() == baseType && 
-                u2.getPlayer() == p.getID()) nbases++;
-        }
-        
-        List<Integer> reservedPositions = new LinkedList<Integer>();
-        if (nbases==0 && !freeWorkers.isEmpty()) {
-            // build a base:
-            if (p.getResources()>=baseType.cost + resourcesUsed) {
-                Unit u = freeWorkers.remove(0);
-                buildIfNotAlreadyBuilding(u,baseType,u.getX(),u.getY(),reservedPositions,p,pgs);
-                resourcesUsed+=baseType.cost;
-            }
-        }
-        
-        if (freeWorkers.size()>0) harvestWorker = freeWorkers.remove(0);
-        
-        // harvest with the harvest worker:
-        if (harvestWorker!=null) {
-            Unit closestBase = null;
-            Unit closestResource = null;
-            int closestDistance = 0;
+    	
+            PhysicalGameState pgs = gs.getPhysicalGameState();
+            int nbases = 0;
+            int resourcesUsed = 0;
+            Unit harvestWorker = null;
+            List<Unit> freeWorkers = new LinkedList<Unit>();
+            freeWorkers.addAll(workers);
+            
+            if (workers.isEmpty()) return;
+            
             for(Unit u2:pgs.getUnits()) {
-                if (u2.getType().isResource) { 
-                    int d = Math.abs(u2.getX() - harvestWorker.getX()) + Math.abs(u2.getY() - harvestWorker.getY());
-                    if (closestResource==null || d<closestDistance) {
-                        closestResource = u2;
-                        closestDistance = d;
+                if (u2.getType() == baseType && 
+                    u2.getPlayer() == p.getID()) nbases++;
+            }
+            
+            List<Integer> reservedPositions = new LinkedList<Integer>();
+            if (nbases==0 && !freeWorkers.isEmpty() && resourse) {
+                // build a base:
+                if (p.getResources()>=baseType.cost + resourcesUsed) {
+                    Unit u = freeWorkers.remove(0);
+                    buildIfNotAlreadyBuilding(u,baseType,u.getX(),u.getY(),reservedPositions,p,pgs);
+                    resourcesUsed+=baseType.cost;
+                }
+            }
+            
+            if (freeWorkers.size()>0 && resourse) harvestWorker = freeWorkers.remove(0);
+            // harvest with the harvest worker:
+            if (harvestWorker!=null) {
+                Unit closestBase = null;
+                Unit closestResource = null;
+                int closestDistance = 0;
+                for(Unit u2:pgs.getUnits()) {
+                    if (u2.getType().isResource) { 
+                        int d = Math.abs(u2.getX() - harvestWorker.getX()) + Math.abs(u2.getY() - harvestWorker.getY());
+                        if (closestResource==null || d<closestDistance) {
+                            closestResource = u2;
+                            closestDistance = d;
+                        }
                     }
                 }
-            }
-            closestDistance = 0;
-            for(Unit u2:pgs.getUnits()) {
-                if (u2.getType().isStockpile && u2.getPlayer()==p.getID()) { 
-                    int d = Math.abs(u2.getX() - harvestWorker.getX()) + Math.abs(u2.getY() - harvestWorker.getY());
-                    if (closestBase==null || d<closestDistance) {
-                        closestBase = u2;
-                        closestDistance = d;
+                closestDistance = 0;
+                for(Unit u2:pgs.getUnits()) {
+                    if (u2.getType().isStockpile && u2.getPlayer()==p.getID()) { 
+                        int d = Math.abs(u2.getX() - harvestWorker.getX()) + Math.abs(u2.getY() - harvestWorker.getY());
+                        if (closestBase==null || d<closestDistance) {
+                            closestBase = u2;
+                            closestDistance = d;
+                        }
                     }
                 }
-            }
-            if (closestResource!=null && closestBase!=null) {
-                AbstractAction aa = getAbstractAction(harvestWorker);
-                if (aa instanceof Harvest) {
-                    Harvest h_aa = (Harvest)aa;
-                    if (h_aa.getTarget() != closestResource || h_aa.getBase()!=closestBase) harvest(harvestWorker, closestResource, closestBase);
-                } else {
-                    harvest(harvestWorker, closestResource, closestBase);
+                if (closestResource!=null && closestBase!=null) {
+                    AbstractAction aa = getAbstractAction(harvestWorker);
+                    if (aa instanceof Harvest) {
+                        Harvest h_aa = (Harvest)aa;
+                        if (h_aa.getTarget() != closestResource || h_aa.getBase()!=closestBase) {
+                            harvest(harvestWorker, closestResource, closestBase);
+                        } else {
+                        }
+                    } else {
+                        harvest(harvestWorker, closestResource, closestBase);
+                    }
+                }
+                else if((closestResource==null) && (p.getResources() == 0) && (freeWorkers.isEmpty()))
+                {
+                    
+                    freeWorkers.add(harvestWorker);
+                    resourse = false;
                 }
             }
+            for(Unit u:freeWorkers) meleeUnitAttack(u, p, gs);
+            
         }
         
-        for(Unit u:freeWorkers) meleeUnitAttack(u, p, gs);
         
-    }
+   
     // This will be called by the microRTS GUI to get the
     // list of parameters that this bot wants exposed
     // in the GUI.
