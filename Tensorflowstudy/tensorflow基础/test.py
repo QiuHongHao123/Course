@@ -1,46 +1,63 @@
 '''
 构建一个三层前向传播网络
 '''
-import tensorflow as tf
+import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
-
+import numpy as np
 
 def creat_3layer(train_db):
     lr = 0.00001
+    iters=8
     '''
     三层前向传播网络，输入为MNIST图片集，第一层输入为784输出为256，第二层输出为128第三层输出为10
 
     :return:
     '''
-    w1 = tf.Variable(tf.random.truncated_normal([784,256]))
-    w2 = tf.Variable(tf.random.truncated_normal([256,128]))
-    w3 = tf.Variable(tf.random.truncated_normal([128,10]))
-    b1 = tf.Variable(tf.zeros([256]))
-    b2 = tf.Variable(tf.zeros([128]))
-    b3 = tf.Variable(tf.zeros([10]))
-    for step, (x, y) in enumerate(train_db):
-        x = tf.reshape(x, (-1, 784))
-        with tf.GradientTape() as tape:
-            h1=x@w1+tf.broadcast_to(b1,[1,256])                    #显示的broadcast变形可以不写
-            h1=tf.nn.relu(h1)
-            h2 = h1 @ w2 + b2
-            h2 = tf.nn.relu(h2)
-            out = h2@w3+b3
-            loss = tf.square(y - out)
-            loss=tf.reduce_mean(loss)
-            if step%80==0:
-                print(loss)
+    for i in range(iters):
+        loss_array=[]
+        w1 = tf.Variable(tf.random.truncated_normal([784,256]))
+        w2 = tf.Variable(tf.random.truncated_normal([256,128]))
+        w3 = tf.Variable(tf.random.truncated_normal([128,10]))
+        b1 = tf.Variable(tf.zeros([256]))
+        b2 = tf.Variable(tf.zeros([128]))
+        b3 = tf.Variable(tf.zeros([10]))
+        for step, (x, y) in enumerate(train_db):
+            x = tf.reshape(x, (-1, 784))
+            with tf.GradientTape() as tape:
+                h1=x@w1+tf.broadcast_to(b1,[1,256])                    #显示的broadcast变形可以不写
+                h1=tf.nn.relu(h1)
+                h2 = h1 @ w2 + b2
+                h2 = tf.nn.relu(h2)
+                out = h2@w3+b3
+                loss = tf.square(y - out)
+                loss=tf.reduce_mean(loss)
+                loss_array.append((step,float(loss)))
+                '''
+                pred=tf.argmax(out,axis=1)
+                y = tf.argmax(y, axis=1)  # one-hot 编码逆过程
+                correct = tf.equal(pred, y) # 比较预测值与真实值
+                '''
+
+                
 
 
-        #通过 tape.gradient()函数求得网络参数到梯度
-        grads =tape.gradient(loss, [w1, b1, w2, b2, w3, b3])
-        w1.assign_sub(lr * grads[0])
-        b1.assign_sub(lr * grads[1])
-        w2.assign_sub(lr * grads[2])
-        b2.assign_sub(lr * grads[3])
-        w3.assign_sub(lr * grads[4])
-        b3.assign_sub(lr * grads[5])
+
+            #通过 tape.gradient()函数求得网络参数到梯度
+            grads =tape.gradient(loss, [w1, b1, w2, b2, w3, b3])
+            w1.assign_sub(lr * grads[0])
+            b1.assign_sub(lr * grads[1])
+            w2.assign_sub(lr * grads[2])
+            b2.assign_sub(lr * grads[3])
+            w3.assign_sub(lr * grads[4])
+            b3.assign_sub(lr * grads[5])
+
+        plt.figure("loss")
+        plt.xlabel('The steps', fontsize=14)  # 指定X坐标轴的标签，并设置标签字体大小
+        plt.ylabel('Loss value', fontsize=14)  # 指定Y坐标轴的标签，并设置标签字体大小
+        plt.plot(loss_array)
+        plt.show()
+
 '''
 a=[[1,2],[3,4]]
 b=[[5,6],[7,8]]
@@ -71,7 +88,6 @@ train_db = train_db.shuffle(10000)
 其中 128 为 batch size 参数，即一次并行计算 128 个样本的数据。Batch size 一般根据用户 的 GPU 显存资源来设置，
 '''
 train_db=train_db.batch(128)
-train_db=train_db.repeat(8)
 
 def preprocess(x, y): # 自定义的预处理函数
 # 调用此函数时会自动传入 x,y 对象，shape 为[b, 28, 28], [b]
