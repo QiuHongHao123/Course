@@ -21,7 +21,7 @@ def draw():
     ax.view_init(60, -30)
     ax.set_xlabel('x')
     ax.set_ylabel('y')
-    return fig
+    return ax
 draw()
 def do_youhua():
     x=tf.Variable(tf.constant([4.0,0]))
@@ -37,15 +37,8 @@ def do_youhua():
         graphdata.append(x)
         if i %10==0:
             print("step=",i,"x=",x,"f(x)=",Himmelblau(x))
-    fig=draw()
-    Z=[]
-    X=[]
-    Y=[]
-    for i in graphdata:
-        X.append(i[0])
-        Y.append(i[1])
-        Z.append(Himmelblau(i))
-    plt.plot(X,Y,Z)
+    ax=draw()
+
     plt.show()
 
 do_youhua()
