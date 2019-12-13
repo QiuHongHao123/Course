@@ -6,7 +6,7 @@ class my_nn_layer(tf.keras.layers.Layer):
         super(my_nn_layer, self).__init__()
         self.w=tf.Variable(tf.random.normal([kernel_size,kernel_size,inputdim,outdim]))
 
-    def __call__(self, input):
+    def call(self, input):
         out = tf.nn.conv2d(input, self.w, padding='SAME', strides=1)
         return out
 
@@ -29,12 +29,12 @@ class Mynetwork(tf.keras.Model):
         tf.keras.layers.Dense(84, activation='relu'), # 全连接层，84 节点
         tf.keras.layers.Dense(10) # 全连接层，10 个节点
         ])
-        self.network.build(input_shape=[4, 28, 28, 1])
-        print(self.network.summary())
-    def __call__(self, inputs):
+        #self.network.build(input_shape=[4, 28, 28, 1])
+
+    def call(self, inputs,training=None):
         x=self.network(inputs)
         return x
 Mynetwork=Mynetwork()
+Mynetwork.build(input_shape=(4, 28, 28, 1))
+print(Mynetwork.summary())
 
-
-print(network.summary())
