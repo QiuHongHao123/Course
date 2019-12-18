@@ -200,19 +200,41 @@ public class Version5 extends AbstractionLayerAI{
         if (workers.isEmpty()) {
             return;
         }
-        if(pgs.getHeight()==16||ifdefenced==false)
+        if(ifdefenced==false)
         {
-        	if(workers.size()<=2)
-        	{
-        		normalWorkers.addAll(workers);
-        		workers.clear();
+        	if(pgs.getHeight()<=16){
+        		if(workers.size()<=2)
+        		{
+        			normalWorkers.addAll(workers);
+        			workers.clear();
+        		}
+        		else{
+        			normalWorkers.add(workers.remove(0));
+        			normalWorkers.add(workers.remove(0));
+        			freeWorkers.addAll(workers);
+        			workers.clear();
+        	
+        		}
         	}
         	else{
-        		normalWorkers.add(workers.remove(0));
-        		normalWorkers.add(workers.remove(0));
-        		freeWorkers.addAll(workers);
-        		workers.clear();
+        		if(workers.size()==1)
+        		{
+        			freeWorkers.add(workers.remove(0));
+        			
+        		}
+        		else if(workers.size()==2)
+        		{
+        			
+        			normalWorkers.addAll(workers);
+        			workers.clear();
+        		}
+        		else{
+        			normalWorkers.add(workers.remove(0));
+        			normalWorkers.add(workers.remove(0));
+        			freeWorkers.addAll(workers);
+        			workers.clear();
         	
+        		}
         	}
 		}
         else{
@@ -245,7 +267,7 @@ public class Version5 extends AbstractionLayerAI{
             // build a barracks:
             if (p.getResources() >= barracksType.cost + resourcesUsed && !freeWorkers.isEmpty()) {
                 Unit u = freeWorkers.remove(0);
-                buildIfNotAlreadyBuilding(u,barracksType,u.getX(),u.getY(),reservedPositions,p,pgs);
+                buildIfNotAlreadyBuilding(u,barracksType,mbase.getX(),mbase.getY(),reservedPositions,p,pgs);
                 resourcesUsed += barracksType.cost;
             }
         }
@@ -515,9 +537,13 @@ public class Version5 extends AbstractionLayerAI{
     			
     		}  		
     	}
-    	if(ifdefenced==false||pgs.getHeight()>16)
-    		{if (p.getResources()>=workerType.cost&&nums<=5) train(u, workerType);}
-    	else{
+    	if(ifdefenced==false)
+    	{
+    		if(pgs.getHeight()<=16)
+    			{if (p.getResources()>=workerType.cost&&nums<=5) train(u, workerType);}
+    		else{if (p.getResources()>=workerType.cost&&nums<=4) train(u, workerType);}
+    		}
+    	else {
     		if (p.getResources()>=workerType.cost&&nums<=2) train(u, workerType);
     		}
     }
