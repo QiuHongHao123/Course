@@ -91,7 +91,7 @@ public class Version5 extends AbstractionLayerAI{
                  u.getPlayer() == player && 
                  gs.getActionAssignment(u)==null) {
             	 
-            		 baseBehavior(u,p,pgs);
+            		 baseBehavior(u,p,gs);
             		 mbase=u;
             	
                 }
@@ -238,8 +238,15 @@ public class Version5 extends AbstractionLayerAI{
         	}
 		}
         else{
-        	normalWorkers.addAll(workers);
-        	workers.clear();
+        	if(pgs.getHeight()<=16&&workers.size()>=2)
+        	{
+        		normalWorkers.add(workers.remove(0));
+        		normalWorkers.add(workers.remove(0));
+        		freeWorkers.addAll(workers);
+			}
+        	else{
+        		normalWorkers.addAll(workers);
+        		workers.clear();}
         	}
         
         for (Unit u2 : pgs.getUnits()) {
@@ -358,11 +365,20 @@ public class Version5 extends AbstractionLayerAI{
         	else{rushflag=1;}
         	
         	}
-        if(mbarrack!=null&&mbarrackaction!=null){
+        /*if(mbarrack!=null&&mbarrackaction!=null){
         	if(mbarrackaction.getActionName()=="wait"){rushflag=1;}
         	if(mbarrackaction.getType()==UnitAction.TYPE_PRODUCE)
     			{rushflag=0;}
+        	}*/
+        if(pgs.getHeight()==16){
+        	if(gs.getTime()>=3500){rushflag=1;}
+        	if(mbarrack!=null&&mbarrackaction!=null){
+            	if(mbarrackaction.getActionName()=="wait"){rushflag=1;}
+            	if(mbarrackaction.getType()==UnitAction.TYPE_PRODUCE)
+        			{rushflag=0;}
+            	}
         	}
+        if(pgs.getHeight()==32){if(gs.getTime()>=5500){rushflag=1;}}
         System.out.println("rushflag="+rushflag);
         if(rushflag==0){defenceUnitBehavior(u,p,gs);}
         else{
@@ -529,8 +545,9 @@ public class Version5 extends AbstractionLayerAI{
         }
     }
 
-    public void baseBehavior(Unit u,Player p, PhysicalGameState pgs){
+    public void baseBehavior(Unit u,Player p, GameState gs){
     	int nums=0;
+    	PhysicalGameState pgs=gs.getPhysicalGameState();
     	for(Unit worker:pgs.getUnits()){
     		if (worker.getType().canHarvest&&worker.getPlayer()==p.getID()){
     			nums=nums+1;
@@ -541,11 +558,16 @@ public class Version5 extends AbstractionLayerAI{
     	{
     		if(pgs.getHeight()<=16)
     			{if (p.getResources()>=workerType.cost&&nums<=5) train(u, workerType);}
-    		else{if (p.getResources()>=workerType.cost&&nums<=4) train(u, workerType);}
+    		else{if (p.getResources()>=workerType.cost&&nums<=3) train(u, workerType);}
     		}
     	else {
-    		if (p.getResources()>=workerType.cost&&nums<=2) train(u, workerType);
+    		if(pgs.getHeight()==16)
+    			{if (p.getResources()>=workerType.cost&&nums<=2) train(u, workerType);}
+    		else{
+    			if(gs.getTime()>=1500){if (p.getResources()>=workerType.cost&&nums<=4) train(u, workerType);}
+    			}
     		}
+    		
     }
     
    
