@@ -34,7 +34,31 @@ class Mynetwork(tf.keras.Model):
     def call(self, inputs,training=None):
         x=self.network(inputs)
         return x
+# 导入误差计算，优化器模块
+from tensorflow.keras import losses, optimizers
+# 创建损失函数的类，在实际计算时直接调用类实例即可
+criteon = losses.CategoricalCrossentropy(from_logits=True)
 Mynetwork=Mynetwork()
 Mynetwork.build(input_shape=(4, 28, 28, 1))
 print(Mynetwork.summary())
+x=tf.random.normal([3,28,28,1])
+y=[[0,1,0,0,0,0,0,0,0,0],
+[0,0,0,1,0,0,0,0,0,0],
+[1,0,0,0,0,0,0,0,0,0]
+   ]
+# 构建梯度记录环境
+with tf.GradientTape() as tape:
+# 插入通道维度，=>[b,28,28,1]
+    x = tf.expand_dims(x,axis=3)
+# 前向计算，获得 10 类别的概率分布，[b, 784] => [b, 10]
+    out = Mynetwork(x)
+# 真实标签 one-hot 编码，[b] => [b, 10]
+    y_onehot = tf.one_hot(y, depth=10)
+# 计算交叉熵损失函数，标量
+    loss = criteon(y_onehot, out)
+# 自动计算梯度
+grads = tape.gradient(loss, Mynetwork.trainable_variables)
+optimizer = tf.keras.optimizers.RMSprop(0.001)  # 创建优化器，指定学习率
+# 自动更新参数
+optimizer.apply_gradients(zip(grads, Mynetwork.trainable_variables))
 
